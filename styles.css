@@ -47,6 +47,7 @@ h1 {
     transform: translateX(-50%);
     margin-bottom: 5px;
     font-size: 14px;
+    color: black;
 }
 
 .bar:hover {
