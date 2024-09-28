@@ -7,6 +7,7 @@
 body {
     font-family: Arial, sans-serif;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     height: 100vh;
@@ -34,7 +35,7 @@ h1 {
     width: 15%;
     background-color: #3498db;
     text-align: center;
-    color: black;
+    color: white;
     position: relative;
     border-radius: 5px;
     transition: background-color 0.3s;
@@ -47,7 +48,6 @@ h1 {
     transform: translateX(-50%);
     margin-bottom: 5px;
     font-size: 14px;
-    color: black;
 }
 
 .bar:hover {
