@@ -3,42 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biểu đồ cột</title>
+    <title>Biểu đồ cột từ Excel</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
-    <h1>Biểu đồ cột</h1>
+    <h1>Biểu đồ cột từ Excel</h1>
+    <input type="file" id="fileInput" accept=".xlsx" />
     <div class="chart-container" id="chartContainer">
         <!-- Các thanh sẽ được tạo ra ở đây -->
     </div>
 
     <script>
-        // Hàm để đọc tệp CSV và tạo biểu đồ cột
-        function fetchData() {
-            fetch('data.csv')  // Đường dẫn tới tệp CSV
-                .then(response => response.text())
-                .then(data => {
-                    const rows = data.split('\n').slice(1); // Bỏ qua tiêu đề
-                    const chartContainer = document.getElementById('chartContainer');
-                    chartContainer.innerHTML = ''; // Xóa nội dung cũ
+        document.getElementById('fileInput').addEventListener('change', handleFile, false);
 
-                    rows.forEach(row => {
-                        const value = row.trim();
-                        if (value) {
-                            const bar = document.createElement('div');
-                            bar.className = 'bar';
-                            bar.style.height = `${value}%`; // Chiều cao dựa trên giá trị
-                            bar.innerHTML = `<span>${value}%</span>`;
-                            chartContainer.appendChild(bar);
-                        }
-                    });
-                })
-                .catch(error => console.error('Error fetching the CSV file:', error));
+        function handleFile(event) {
+            const file = event.target.files[0];
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                // Giả sử dữ liệu nằm trong sheet đầu tiên
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+
+                // Chuyển đổi dữ liệu sang JSON
+                const json = XLSX.utils.sheet_to_json(worksheet);
+                createChart(json);
+            };
+
+            reader.readAsArrayBuffer(file);
         }
 
-        // Gọi hàm fetchData khi trang được tải
-        window.onload = fetchData;
+        function createChart(data) {
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = ''; // Xóa nội dung cũ
+
+            data.forEach(row => {
+                const value = row.Value; // Thay đổi 'Value' nếu tiêu đề cột trong Excel khác
+                if (value) {
+                    const bar = document.createElement('div');
+                    bar.className = 'bar';
+                    bar.style.height = `${value}%`; // Chiều cao dựa trên giá trị
+                    bar.innerHTML = `<span>${value}%</span>`;
+                    chartContainer.appendChild(bar);
+                }
+            });
+        }
     </script>
 
 </body>
