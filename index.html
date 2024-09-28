@@ -22,6 +22,7 @@
     <script>
         let isBarChartVisible = true; // Biến theo dõi biểu đồ nào đang hiển thị
         let chartData = []; // Lưu trữ dữ liệu CSV
+        let pieChartInstance = null; // Biến để lưu trữ biểu đồ hình tròn
 
         // Hàm để đọc tệp CSV và tạo biểu đồ
         function fetchData() {
@@ -54,7 +55,14 @@
         // Tạo biểu đồ hình tròn bằng thư viện Chart.js
         function createPieChart() {
             const ctx = document.getElementById('pieChart').getContext('2d');
-            new Chart(ctx, {
+
+            // Nếu biểu đồ hình tròn đã tồn tại, hủy nó trước khi tạo biểu đồ mới
+            if (pieChartInstance) {
+                pieChartInstance.destroy();
+            }
+
+            // Tạo biểu đồ mới và lưu trữ vào biến `pieChartInstance`
+            pieChartInstance = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: chartData.map((_, index) => `Value ${index + 1}`),
@@ -97,7 +105,7 @@
         // Gọi hàm fetchData khi trang được tải
         window.onload = function() {
             fetchData();
-            setInterval(toggleChart, 10000); // Chuyển đổi biểu đồ cứ sau 30 giây
+            setInterval(toggleChart, 3000); // Chuyển đổi biểu đồ cứ sau 3 giây
         };
     </script>
 
