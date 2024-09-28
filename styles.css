@@ -7,6 +7,7 @@
 body {
     font-family: Arial, sans-serif;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     height: 100vh;
@@ -51,4 +52,18 @@ h1 {
 
 .bar:hover {
     background-color: #2980b9;
+}
+
+/* CSS cho biểu đồ hình tròn */
+.pie-chart-container {
+    width: 300px;
+    height: 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+canvas {
+    width: 100% !important;
+    height: auto !important;
 }
