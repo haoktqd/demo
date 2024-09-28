@@ -10,22 +10,17 @@
 <body>
 
     <h1>Biểu đồ cột từ Excel</h1>
-    <input type="file" id="fileInput" accept=".xlsx" />
     <div class="chart-container" id="chartContainer">
         <!-- Các thanh sẽ được tạo ra ở đây -->
     </div>
 
     <script>
-        document.getElementById('fileInput').addEventListener('change', handleFile, false);
-
-        function handleFile(event) {
-            const file = event.target.files[0];
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
+        // Đọc tệp Excel có sẵn
+        fetch('data.xlsx') // Đường dẫn tới tệp Excel
+            .then(response => response.arrayBuffer())
+            .then(data => {
                 const workbook = XLSX.read(data, { type: 'array' });
-
+                
                 // Giả sử dữ liệu nằm trong sheet đầu tiên
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
@@ -33,10 +28,8 @@
                 // Chuyển đổi dữ liệu sang JSON
                 const json = XLSX.utils.sheet_to_json(worksheet);
                 createChart(json);
-            };
-
-            reader.readAsArrayBuffer(file);
-        }
+            })
+            .catch(error => console.error('Error fetching the Excel file:', error));
 
         function createChart(data) {
             const chartContainer = document.getElementById('chartContainer');
