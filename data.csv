@@ -1,6 +1,12 @@
-value
-10
-20
-30
-40
-50
+﻿Indicator_code,Indicator_name,Market,Date,Value
+VTG132,Tổng doanh thu,VTG,9/30/24,815444
+VTC132,Tổng doanh thu,VTC,9/30/24,476359
+STL132,Tổng doanh thu,STL,9/30/24,772024
+NCM132,Tổng doanh thu,NCM,9/30/24,779973
+MOV132,Tổng doanh thu,MOV,9/30/24,972941
+VTL132,Tổng doanh thu,VTL,9/30/24,574091
+VBD132,Tổng doanh thu,VBD,9/30/24,466354
+VTZ132,Tổng doanh thu,VTZ,9/30/24,182224
+MYN132,Tổng doanh thu,MYN,9/30/24,371492
+VTP132,Tổng doanh thu,VTP,9/30/24,271717
+VCM132,Tổng doanh thu,VCM,9/30/24,863462
