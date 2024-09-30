@@ -11,9 +11,15 @@
 <body>
     <h1>Indicator Dashboard</h1>
 
-    <!-- Biểu đồ hình quạt: Value theo Indicator_name của tháng gần nhất -->
+    <!-- Dropdown chọn ngày -->
+    <div class="date-selector">
+        <label for="dateSelect">Chọn ngày:</label>
+        <select id="dateSelect" onchange="updateDoughnutChart()"></select>
+    </div>
+
+    <!-- Biểu đồ hình quạt: Value theo Indicator_name của tháng được chọn -->
     <div class="chart-container">
-        <h2>Cơ cấu Indicator_name tháng gần nhất</h2>
+        <h2>Cơ cấu Indicator_name theo ngày chọn</h2>
         <canvas id="doughnutChart"></canvas>
     </div>
 
@@ -30,27 +36,58 @@
     </div>
 
     <script>
+        let allData = []; // Biến toàn cục để lưu dữ liệu từ CSV
+        let selectedDate = ''; // Biến lưu ngày được chọn
+
         // Load CSV file via PapaParse
         Papa.parse("data.csv", {
             download: true,
             header: true,
             dynamicTyping: true,
             complete: function(results) {
-                processData(results.data);
+                allData = results.data;
+                processData(allData);
+                populateDateSelect(allData);
             }
         });
+
+        function populateDateSelect(data) {
+            const dateSelect = document.getElementById('dateSelect');
+            const dateLabels = new Set();
+
+            // Lấy các ngày từ dữ liệu
+            data.forEach(row => {
+                if (row['Date']) {
+                    dateLabels.add(row['Date']);
+                }
+            });
+
+            // Thêm các ngày vào dropdown
+            Array.from(dateLabels).sort().forEach(date => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.text = date;
+                dateSelect.appendChild(option);
+            });
+        }
 
         function processData(data) {
             const markets = {};
             const indicatorNameValues = {};
             const dateLabels = new Set();
 
-            // Xử lý dữ liệu từ CSV
             data.forEach(row => {
-                const market = row['Market'];
+                const market = row['Market'] || "NA";
+                const indicatorName = row['Indicator_name'] || "Unknown Indicator";
+                const value = row['Value'] !== undefined && !isNaN(row['Value']) ? row['Value'] : 0;
+
+                if (!row['Date'] || isNaN(new Date(row['Date']).getTime())) {
+                    console.warn(`Invalid date for row: ${JSON.stringify(row)}`);
+                    return;
+                }
                 const date = new Date(row['Date']);
-                const indicatorName = row['Indicator_name'];
-                const value = row['Value']; // Giá trị
+                const yearMonth = `${date.getFullYear()}-${('0' + (date.getMonth() + 1)).slice(-2)}`;
+                dateLabels.add(yearMonth);
 
                 if (!markets[market]) {
                     markets[market] = {};
@@ -58,9 +95,6 @@
                 if (!indicatorNameValues[market]) {
                     indicatorNameValues[market] = {};
                 }
-
-                const yearMonth = `${date.getFullYear()}-${('0' + (date.getMonth() + 1)).slice(-2)}`;
-                dateLabels.add(yearMonth);
 
                 if (!markets[market][yearMonth]) {
                     markets[market][yearMonth] = 0;
@@ -74,51 +108,45 @@
             });
 
             const sortedDateLabels = Array.from(dateLabels).sort();
+            createLineChart(sortedDateLabels, indicatorNameValues);
+            createBarChart(sortedDateLabels, markets);
 
-            // Dữ liệu biểu đồ hình quạt (indicator_name của tháng gần nhất)
-            const latestMonth = sortedDateLabels[sortedDateLabels.length - 1];
+            // Hiển thị biểu đồ hình quạt cho ngày đầu tiên trong danh sách
+            selectedDate = sortedDateLabels[0];
+            updateDoughnutChart();
+        }
+
+        function updateDoughnutChart() {
+            const selectedDate = document.getElementById('dateSelect').value;
             const doughnutLabels = [];
             const doughnutValues = [];
-            Object.keys(markets).forEach(market => {
-                if (indicatorNameValues[market][latestMonth]) {
-                    doughnutLabels.push(market);
-                    doughnutValues.push(indicatorNameValues[market][latestMonth]);
+
+            // Lấy dữ liệu cho biểu đồ hình quạt theo ngày được chọn
+            allData.forEach(row => {
+                if (row['Date'] === selectedDate) {
+                    const market = row['Market'];
+                    const value = row['Value'] !== undefined && !isNaN(row['Value']) ? row['Value'] : 0;
+                    
+                    if (!doughnutLabels.includes(market)) {
+                        doughnutLabels.push(market);
+                        doughnutValues.push(value);
+                    } else {
+                        const index = doughnutLabels.indexOf(market);
+                        doughnutValues[index] += value; // Cộng dồn giá trị nếu có cùng Market
+                    }
                 }
             });
 
-            // Dữ liệu biểu đồ đường và biểu đồ cột
-            const lineDatasets = [];
-            const barDatasets = [];
-            Object.keys(markets).forEach(market => {
-                const marketData = sortedDateLabels.map(date => indicatorNameValues[market][date] || 0);
-
-                lineDatasets.push({
-                    label: market,
-                    data: marketData,
-                    borderColor: getRandomColor(),
-                    fill: false
-                });
-
-                barDatasets.push({
-                    label: market,
-                    data: marketData,
-                    backgroundColor: getRandomColor()
-                });
-            });
-
-            // Tạo biểu đồ hình quạt
             createDoughnutChart(doughnutLabels, doughnutValues);
-
-            // Tạo biểu đồ đường
-            createLineChart(sortedDateLabels, lineDatasets);
-
-            // Tạo biểu đồ cột
-            createBarChart(sortedDateLabels, barDatasets);
         }
 
         function createDoughnutChart(labels, data) {
             const ctx = document.getElementById('doughnutChart').getContext('2d');
-            new Chart(ctx, {
+            // Xóa biểu đồ cũ
+            if (ctx.chart) {
+                ctx.chart.destroy();
+            }
+            ctx.chart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: labels,
@@ -132,11 +160,22 @@
 
         function createLineChart(labels, datasets) {
             const ctx = document.getElementById('lineChart').getContext('2d');
+            const datasetsArray = [];
+            Object.keys(datasets).forEach(market => {
+                const marketData = labels.map(date => datasets[market][date] || 0);
+                datasetsArray.push({
+                    label: market,
+                    data: marketData,
+                    borderColor: getRandomColor(),
+                    fill: false
+                });
+            });
+
             new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: datasets
+                    datasets: datasetsArray
                 },
                 options: {
                     responsive: true,
@@ -150,7 +189,7 @@
                             display: true,
                             title: {
                                 display: true,
-                                text: 'Month'
+                                text: 'Date'
                             }
                         },
                         y: {
@@ -167,11 +206,21 @@
 
         function createBarChart(labels, datasets) {
             const ctx = document.getElementById('barChart').getContext('2d');
+            const datasetsArray = [];
+            Object.keys(datasets).forEach(market => {
+                const marketData = labels.map(date => datasets[market][date] || 0);
+                datasetsArray.push({
+                    label: market,
+                    data: marketData,
+                    backgroundColor: getRandomColor()
+                });
+            });
+
             new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: datasets
+                    datasets: datasetsArray
                 },
                 options: {
                     responsive: true,
@@ -185,7 +234,7 @@
                             display: true,
                             title: {
                                 display: true,
-                                text: 'Month'
+                                text: 'Date'
                             }
                         },
                         y: {
