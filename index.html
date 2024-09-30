@@ -74,13 +74,13 @@
             // Đặt giá trị mặc định là ngày lớn nhất
             dateSelect.value = sortedDates[sortedDates.length - 1]; // Ngày lớn nhất
             selectedDate = dateSelect.value; // Cập nhật biến selectedDate
+            updateDoughnutChart(); // Cập nhật biểu đồ hình quạt theo ngày lớn nhất
         }
 
         function processData(data) {
             const markets = {};
             const indicatorNameValues = {};
             const dateLabels = new Set();
-            let maxDate = new Date(0); // Khởi tạo với ngày nhỏ nhất
 
             data.forEach(row => {
                 const market = row['Market'] || "NA";
@@ -92,12 +92,8 @@
                     return;
                 }
                 const date = new Date(row['Date']);
-                dateLabels.add(date.toISOString().slice(0, 10)); // Lưu dạng YYYY-MM-DD
-
-                // Xác định ngày lớn nhất
-                if (date > maxDate) {
-                    maxDate = date;
-                }
+                const yearMonth = `${date.getFullYear()}-${('0' + (date.getMonth() + 1)).slice(-2)}`;
+                dateLabels.add(yearMonth);
 
                 if (!markets[market]) {
                     markets[market] = {};
@@ -106,7 +102,6 @@
                     indicatorNameValues[market] = {};
                 }
 
-                const yearMonth = `${date.getFullYear()}-${('0' + (date.getMonth() + 1)).slice(-2)}`;
                 if (!markets[market][yearMonth]) {
                     markets[market][yearMonth] = 0;
                 }
@@ -121,9 +116,6 @@
             const sortedDateLabels = Array.from(dateLabels).sort();
             createLineChart(sortedDateLabels, indicatorNameValues);
             createBarChart(sortedDateLabels, markets);
-
-            // Hiển thị biểu đồ hình quạt cho ngày đã chọn
-            updateDoughnutChart();
         }
 
         function updateDoughnutChart() {
