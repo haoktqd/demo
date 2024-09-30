@@ -3,111 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biểu đồ cột và biểu đồ hình tròn</title>
+    <title>Indicator Dashboard</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 </head>
 <body>
+    <h1>Indicator Dashboard</h1>
 
-    <h1>Biểu đồ</h1>
-    <div class="chart-container" id="chartContainer">
-        <!-- Các biểu đồ sẽ được tạo ra ở đây -->
-    </div>
-
-    <div class="pie-chart-container" id="pieChartContainer" style="display: none;">
+    <!-- Biểu đồ hình tròn: Cơ cấu indicator_name tháng gần nhất -->
+    <div class="chart-container">
+        <h2>Cơ cấu Indicator_name tháng gần nhất</h2>
         <canvas id="pieChart"></canvas>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Thư viện cho biểu đồ hình tròn -->
+    <!-- Biểu đồ đường: Xu thế indicator_name theo thời gian cho các market -->
+    <div class="chart-container">
+        <h2>Xu thế Indicator_name theo thời gian</h2>
+        <canvas id="lineChart"></canvas>
+    </div>
+
+    <!-- Biểu đồ hình cột: Indicator_name theo tháng của từng market -->
+    <div class="chart-container">
+        <h2>Indicator_name theo thị trường và tháng</h2>
+        <canvas id="barChart"></canvas>
+    </div>
 
     <script>
-        let isBarChartVisible = true; // Biến theo dõi biểu đồ nào đang hiển thị
-        let chartData = []; // Lưu trữ dữ liệu CSV
-        let pieChartInstance = null; // Biến để lưu trữ biểu đồ hình tròn
+        // Load CSV file via PapaParse
+        Papa.parse("data.csv", {
+            download: true,
+            header: true,
+            dynamicTyping: true,
+            complete: function(results) {
+                processData(results.data);
+            }
+        });
 
-        // Hàm để đọc tệp CSV và tạo biểu đồ
-        function fetchData() {
-            fetch('data.csv')  // Đường dẫn tới tệp CSV
-                .then(response => response.text())
-                .then(data => {
-                    const rows = data.split('\n').slice(1); // Bỏ qua tiêu đề
-                    chartData = rows.map(row => row.trim()); // Lưu dữ liệu để dùng cho cả hai biểu đồ
-                    createBarChart();
-                })
-                .catch(error => console.error('Error fetching the CSV file:', error));
+        function processData(data) {
+            const markets = {};
+            const indicatorNameValues = {};
+            const dateLabels = new Set();
+
+            // Xử lý dữ liệu từ CSV
+            data.forEach(row => {
+                const market = row['Market'];
+                const date = new Date(row['Date']);
+                const indicatorName = row['Indicator_name'];
+                const value = row['Value']; // Giá trị
+
+                if (!markets[market]) {
+                    markets[market] = {};
+                }
+                if (!indicatorNameValues[market]) {
+                    indicatorNameValues[market] = {};
+                }
+
+                const yearMonth = `${date.getFullYear()}-${('0' + (date.getMonth() + 1)).slice(-2)}`;
+                dateLabels.add(yearMonth);
+
+                if (!markets[market][yearMonth]) {
+                    markets[market][yearMonth] = 0;
+                }
+                if (!indicatorNameValues[market][yearMonth]) {
+                    indicatorNameValues[market][yearMonth] = 0;
+                }
+
+                markets[market][yearMonth] += value;
+                indicatorNameValues[market][yearMonth] += value;
+            });
+
+            const sortedDateLabels = Array.from(dateLabels).sort();
+
+            // Dữ liệu biểu đồ hình tròn (indicator_name của tháng gần nhất)
+            const latestMonth = sortedDateLabels[sortedDateLabels.length - 1];
+            const pieLabels = [];
+            const pieValues = [];
+            Object.keys(markets).forEach(market => {
+                if (indicatorNameValues[market][latestMonth]) {
+                    pieLabels.push(market);
+                    pieValues.push(indicatorNameValues[market][latestMonth]);
+                }
+            });
+
+            // Dữ liệu biểu đồ đường và biểu đồ cột
+            const lineDatasets = [];
+            const barDatasets = [];
+            Object.keys(markets).forEach(market => {
+                const marketData = sortedDateLabels.map(date => indicatorNameValues[market][date] || 0);
+
+                lineDatasets.push({
+                    label: market,
+                    data: marketData,
+                    borderColor: getRandomColor(),
+                    fill: false
+                });
+
+                barDatasets.push({
+                    label: market,
+                    data: marketData,
+                    backgroundColor: getRandomColor()
+                });
+            });
+
+            // Tạo biểu đồ hình tròn
+            createPieChart(pieLabels, pieValues);
+
+            // Tạo biểu đồ đường
+            createLineChart(sortedDateLabels, lineDatasets);
+
+            // Tạo biểu đồ cột
+            createBarChart(sortedDateLabels, barDatasets);
         }
 
-        // Tạo biểu đồ cột
-        function createBarChart() {
-            const chartContainer = document.getElementById('chartContainer');
-            chartContainer.innerHTML = ''; // Xóa nội dung cũ
-
-            chartData.forEach(value => {
-                if (value) {
-                    const bar = document.createElement('div');
-                    bar.className = 'bar';
-                    bar.style.height = `${value}%`; // Chiều cao dựa trên giá trị
-                    bar.innerHTML = `<span>${value}%</span>`;
-                    chartContainer.appendChild(bar);
+        function createPieChart(labels, data) {
+            const ctx = document.getElementById('pieChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: labels.map(() => getRandomColor())
+                    }]
                 }
             });
         }
 
-        // Tạo biểu đồ hình tròn bằng thư viện Chart.js
-        function createPieChart() {
-            const ctx = document.getElementById('pieChart').getContext('2d');
-
-            // Nếu biểu đồ hình tròn đã tồn tại, hủy nó trước khi tạo biểu đồ mới
-            if (pieChartInstance) {
-                pieChartInstance.destroy();
-            }
-
-            // Tạo biểu đồ mới và lưu trữ vào biến `pieChartInstance`
-            pieChartInstance = new Chart(ctx, {
-                type: 'pie',
+        function createLineChart(labels, datasets) {
+            const ctx = document.getElementById('lineChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
                 data: {
-                    labels: chartData.map((_, index) => `Value ${index + 1}`),
-                    datasets: [{
-                        label: 'Percentage',
-                        data: chartData,
-                        backgroundColor: ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6'],
-                    }]
+                    labels: labels,
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
                         }
                     }
                 }
             });
         }
 
-        // Chuyển đổi biểu đồ giữa cột và hình tròn
-        function toggleChart() {
-            const barChartContainer = document.getElementById('chartContainer');
-            const pieChartContainer = document.getElementById('pieChartContainer');
-
-            if (isBarChartVisible) {
-                barChartContainer.style.display = 'none';
-                pieChartContainer.style.display = 'block';
-                createPieChart(); // Tạo biểu đồ hình tròn
-            } else {
-                pieChartContainer.style.display = 'none';
-                barChartContainer.style.display = 'flex';
-                createBarChart(); // Tạo biểu đồ cột
-            }
-
-            isBarChartVisible = !isBarChartVisible; // Đảo ngược trạng thái
+        function createBarChart(labels, datasets) {
+            const ctx = document.getElementById('barChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
+                        }
+                    }
+                }
+            });
         }
 
-        // Gọi hàm fetchData khi trang được tải
-        window.onload = function() {
-            fetchData();
-            setInterval(toggleChart, 3000); // Chuyển đổi biểu đồ cứ sau 3 giây
-        };
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
     </script>
-
 </body>
 </html>
