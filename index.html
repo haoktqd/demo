@@ -63,12 +63,17 @@
             });
 
             // Thêm các ngày vào dropdown
-            Array.from(dateLabels).sort().forEach(date => {
+            const sortedDates = Array.from(dateLabels).sort();
+            sortedDates.forEach(date => {
                 const option = document.createElement('option');
                 option.value = date;
                 option.text = date;
                 dateSelect.appendChild(option);
             });
+
+            // Đặt giá trị mặc định là ngày lớn nhất
+            dateSelect.value = sortedDates[sortedDates.length - 1]; // Ngày lớn nhất
+            selectedDate = dateSelect.value; // Cập nhật biến selectedDate
         }
 
         function processData(data) {
@@ -113,15 +118,11 @@
                 indicatorNameValues[market][yearMonth] += value;
             });
 
-            // Lấy ngày cuối cùng của tháng lớn nhất
-            const lastDayOfMonth = new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 0);
-            selectedDate = lastDayOfMonth.toISOString().slice(0, 10); // Định dạng YYYY-MM-DD
-
             const sortedDateLabels = Array.from(dateLabels).sort();
             createLineChart(sortedDateLabels, indicatorNameValues);
             createBarChart(sortedDateLabels, markets);
 
-            // Hiển thị biểu đồ hình quạt cho ngày cuối cùng của tháng lớn nhất
+            // Hiển thị biểu đồ hình quạt cho ngày đã chọn
             updateDoughnutChart();
         }
 
