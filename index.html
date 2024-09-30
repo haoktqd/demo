@@ -11,19 +11,19 @@
 <body>
     <h1>Indicator Dashboard</h1>
 
-    <!-- Biểu đồ hình tròn: Cơ cấu indicator_name tháng gần nhất -->
+    <!-- Biểu đồ hình quạt: Value theo Indicator_name của tháng gần nhất -->
     <div class="chart-container">
         <h2>Cơ cấu Indicator_name tháng gần nhất</h2>
-        <canvas id="pieChart"></canvas>
+        <canvas id="doughnutChart"></canvas>
     </div>
 
-    <!-- Biểu đồ đường: Xu thế indicator_name theo thời gian cho các market -->
+    <!-- Biểu đồ đường: Xu thế Indicator_name theo thời gian cho các Market -->
     <div class="chart-container">
         <h2>Xu thế Indicator_name theo thời gian</h2>
         <canvas id="lineChart"></canvas>
     </div>
 
-    <!-- Biểu đồ hình cột: Indicator_name theo tháng của từng market -->
+    <!-- Biểu đồ hình cột: Indicator_name theo tháng của từng Market -->
     <div class="chart-container">
         <h2>Indicator_name theo thị trường và tháng</h2>
         <canvas id="barChart"></canvas>
@@ -75,14 +75,14 @@
 
             const sortedDateLabels = Array.from(dateLabels).sort();
 
-            // Dữ liệu biểu đồ hình tròn (indicator_name của tháng gần nhất)
+            // Dữ liệu biểu đồ hình quạt (indicator_name của tháng gần nhất)
             const latestMonth = sortedDateLabels[sortedDateLabels.length - 1];
-            const pieLabels = [];
-            const pieValues = [];
+            const doughnutLabels = [];
+            const doughnutValues = [];
             Object.keys(markets).forEach(market => {
                 if (indicatorNameValues[market][latestMonth]) {
-                    pieLabels.push(market);
-                    pieValues.push(indicatorNameValues[market][latestMonth]);
+                    doughnutLabels.push(market);
+                    doughnutValues.push(indicatorNameValues[market][latestMonth]);
                 }
             });
 
@@ -106,8 +106,8 @@
                 });
             });
 
-            // Tạo biểu đồ hình tròn
-            createPieChart(pieLabels, pieValues);
+            // Tạo biểu đồ hình quạt
+            createDoughnutChart(doughnutLabels, doughnutValues);
 
             // Tạo biểu đồ đường
             createLineChart(sortedDateLabels, lineDatasets);
@@ -116,10 +116,10 @@
             createBarChart(sortedDateLabels, barDatasets);
         }
 
-        function createPieChart(labels, data) {
-            const ctx = document.getElementById('pieChart').getContext('2d');
+        function createDoughnutChart(labels, data) {
+            const ctx = document.getElementById('doughnutChart').getContext('2d');
             new Chart(ctx, {
-                type: 'pie',
+                type: 'doughnut',
                 data: {
                     labels: labels,
                     datasets: [{
